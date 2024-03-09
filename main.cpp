@@ -31,7 +31,7 @@ public:
     Matrix(const std::vector<double>& pre_vals)
     : nRows(pre_vals.size()), nCols(1),
     vals(pre_vals.size(), std::vector<double>(1, 0.0f)) {
-        for (int i = 0; i < pre_vals.size(); i++) {
+        for (size_t i = 0; i < pre_vals.size(); i++) {
             vals[i][0] = pre_vals[i];
         }
     }
@@ -44,17 +44,159 @@ public:
         return vals[idx];
     }
 
-    Matrix operator+=(const Matrix& other) {
+    Matrix operator+(const float x) const {
+        Matrix res(*this);
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                res[i][j] += x;
+            }
+        }
+        return res;
+    }
+
+    Matrix operator-(const float x) const {
+        Matrix res(*this);
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                res[i][j] -= x;
+            }
+        }
+        return res;
+    }
+
+    Matrix operator*(const float x) const {
+        Matrix res(*this);
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                res[i][j] *= x;
+            }
+        }
+        return res;
+    }
+
+    Matrix operator+=(const float x) {
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                vals[i][j] += x;
+            }
+        }
+        return *this;
+    }
+
+    Matrix operator-=(const float x) {
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                vals[i][j] -= x;
+            }
+        }
+        return *this;
+    }
+
+    Matrix operator*=(const float x) {
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                vals[i][j] *= x;
+            }
+        }
+        return *this;
+    }
+
+    void checkShapeMismatch(const Matrix& other) const {
         if (other.nRows != nCols && other.nRows != 1) {
             this->printShapeMismatch(other);
-            throw std::runtime_error("Matrix::operator+= shape mismatch!\
+            throw std::runtime_error("Matrix::operator+-*= shape mismatch!\
                     nRows should either 1 or equal to this->nCols!\n");
         }
         if (other.nCols != nCols && other.nCols != 1) {
             this->printShapeMismatch(other);
-            throw std::runtime_error("Matrix::operator+= shape mismatch!\
+            throw std::runtime_error("Matrix::operator+-*= shape mismatch!\
                     Other nCols should either 1 or equal to this->nRows!\n");
         }
+    }
+
+    Matrix operator+(const Matrix& other) const {
+        this->checkShapeMismatch(other);
+        Matrix res(*this);
+        if (other.nCols == 1) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    res[i][j] += other[j][0];
+                }
+            }
+        }
+        if (other.nRows == 1) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    res[i][j] += other[0][j];
+                }
+            }
+        }
+        if (other.nRows == nRows && other.nCols == nCols) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    res[i][j] += other[i][j];
+                }
+            }
+        }
+        return res;
+    }
+
+    Matrix operator-(const Matrix& other) const {
+        this->checkShapeMismatch(other);
+        Matrix res(*this);
+        if (other.nCols == 1) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    res[i][j] -= other[j][0];
+                }
+            }
+        }
+        if (other.nRows == 1) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    res[i][j] -= other[0][j];
+                }
+            }
+        }
+        if (other.nRows == nRows && other.nCols == nCols) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    res[i][j] -= other[i][j];
+                }
+            }
+        }
+        return res;
+    }
+
+    Matrix operator*(const Matrix& other) const {
+        this->checkShapeMismatch(other);
+        Matrix res(*this);
+        if (other.nCols == 1) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    res[i][j] *= other[j][0];
+                }
+            }
+        }
+        if (other.nRows == 1) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    res[i][j] *= other[0][j];
+                }
+            }
+        }
+        if (other.nRows == nRows && other.nCols == nCols) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    res[i][j] *= other[i][j];
+                }
+            }
+        }
+        return res;
+    }
+
+    Matrix operator+=(const Matrix& other) {
+        this->checkShapeMismatch(other);
         if (other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
@@ -79,8 +221,60 @@ public:
         return *this;
     }
 
+    Matrix operator-=(const Matrix& other) {
+        this->checkShapeMismatch(other);
+        if (other.nCols == 1) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    vals[i][j] -= other[j][0];
+                }
+            }
+        }
+        if (other.nRows == 1) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    vals[i][j] -= other[0][j];
+                }
+            }
+        }
+        if (other.nRows == nRows && other.nCols == nCols) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    vals[i][j] -= other[i][j];
+                }
+            }
+        }
+        return *this;
+    }
+
+    Matrix operator*=(const Matrix& other) {
+        this->checkShapeMismatch(other);
+        if (other.nCols == 1) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    vals[i][j] *= other[j][0];
+                }
+            }
+        }
+        if (other.nRows == 1) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    vals[i][j] *= other[0][j];
+                }
+            }
+        }
+        if (other.nRows == nRows && other.nCols == nCols) {
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < nCols; j++) {
+                    vals[i][j] *= other[i][j];
+                }
+            }
+        }
+        return *this;
+    }
+
     Matrix transpose()  {
-        Matrix res = Matrix(nCols, nRows, 0.0f);
+        Matrix res(nCols, nRows, 0.0f);
         for (int i = 0; i < nRows; i++) {
             for (int j = 0; j < nCols; j++) {
                 res[j][i] = vals[i][j];
@@ -91,7 +285,7 @@ public:
 
     void print() const {
         printf("{\n");
-        for (const std::vector<double> row : vals) {
+        for (const std::vector<double> &row : vals) {
             printf("{ ");
             for (const double n : row) {
                 printf("%f ", n);
@@ -173,7 +367,7 @@ public:
         res += bias;
         lastOut = res;
         return res;
-    } 
+    }
 };
 
 
@@ -197,6 +391,8 @@ public:
         res = layer3.forward(res);
         return res;
     }
+    
+
 };
 
 std::vector<double> linspace(const double low, const double high,
