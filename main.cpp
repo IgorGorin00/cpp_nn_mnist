@@ -518,7 +518,6 @@ public:
         Matrix delta_layer3 = loss_grad;
 
         this->layer3.weightGrad = matMul(delta_layer3.T(), ReLU(this->layer2.lastOut));
-
         this->layer3.biasGrad = delta_layer3.rowWiseSum();
         Matrix delta_layer2 = matMul(delta_layer3, this->layer3.weight) * dReLU(this->layer2.lastOut);
 
