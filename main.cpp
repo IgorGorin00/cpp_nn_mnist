@@ -4,9 +4,7 @@
 #include <stdexcept>
 #include <vector>
 #include <random>
-
-
-
+#include <cassert>
 
 struct Matrix {
 public:
@@ -14,9 +12,9 @@ public:
     std::vector<std::vector<double>> vals;
     
     Matrix(const int nr, const int nc, 
-           const float mean = 0.0, const float scale = 0.0) 
+           const double mean = 0.0f, const double scale = 0.0f) 
         : nRows(nr), nCols(nc), vals(nr, std::vector<double>(nc, mean)) {
-            if (scale != 0.0) {
+            if (scale != 0.0f) {
                 std::random_device rd{};
                 std::mt19937 gen(rd());
                 std::normal_distribution<double> d{mean, scale};
@@ -33,6 +31,17 @@ public:
     vals(pre_vals.size(), std::vector<double>(1, 0.0f)) {
         for (size_t i = 0; i < pre_vals.size(); i++) {
             vals[i][0] = pre_vals[i];
+        }
+    }
+
+    Matrix(const std::vector<std::vector<double>>& pre_vals)
+    : nRows(pre_vals.size()), nCols(pre_vals[0].size()),
+    vals(pre_vals.size(), std::vector<double>(pre_vals[0].size(), 0.0f)) {
+
+        for (size_t i = 0; i < pre_vals.size(); i++) {
+            for (size_t j = 0; j < pre_vals.size(); j++) {
+                vals[i][j] = pre_vals[i][j];
+            }
         }
     }
 
@@ -101,30 +110,42 @@ public:
         return *this;
     }
 
+    Matrix operator/=(const float x) {
+        if (x == 0.0f) {
+            throw std::runtime_error("cant divide by 0 in matrix overloading!\n");
+        }
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                vals[i][j] /= x;
+            }
+        }
+        return *this;
+    }
+
     void checkShapeMismatch(const Matrix& other) const {
-        if (other.nRows != nCols && other.nRows != 1) {
+        if (other.nRows != 1 && other.nRows != nRows) {
             this->printShapeMismatch(other);
-            throw std::runtime_error("Matrix::operator+-*= shape mismatch!\
-                    nRows should either 1 or equal to this->nCols!\n");
+            throw std::runtime_error("Matrix::operator+-*= shape mismatch!\n"
+                         "nRows should either 1 or equal to this->nRows!\n");
         }
         if (other.nCols != nCols && other.nCols != 1) {
             this->printShapeMismatch(other);
-            throw std::runtime_error("Matrix::operator+-*= shape mismatch!\
-                    Other nCols should either 1 or equal to this->nRows!\n");
+            throw std::runtime_error("Matrix::operator+-*= shape mismatch!\n"
+                    "Other nCols should either 1 or equal to this->nRows!\n");
         }
     }
 
     Matrix operator+(const Matrix& other) const {
         this->checkShapeMismatch(other);
         Matrix res(*this);
-        if (other.nCols == 1) {
+        if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     res[i][j] += other[j][0];
                 }
             }
         }
-        if (other.nRows == 1) {
+        if (other.nRows == 1 && other.nCols == nCols) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     res[i][j] += other[0][j];
@@ -144,14 +165,14 @@ public:
     Matrix operator-(const Matrix& other) const {
         this->checkShapeMismatch(other);
         Matrix res(*this);
-        if (other.nCols == 1) {
+        if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     res[i][j] -= other[j][0];
                 }
             }
         }
-        if (other.nRows == 1) {
+        if (other.nRows == 1 && other.nCols == nCols) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     res[i][j] -= other[0][j];
@@ -171,14 +192,14 @@ public:
     Matrix operator*(const Matrix& other) const {
         this->checkShapeMismatch(other);
         Matrix res(*this);
-        if (other.nCols == 1) {
+        if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     res[i][j] *= other[j][0];
                 }
             }
         }
-        if (other.nRows == 1) {
+        if (other.nRows == 1 && other.nCols == nCols) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     res[i][j] *= other[0][j];
@@ -197,14 +218,14 @@ public:
 
     Matrix operator+=(const Matrix& other) {
         this->checkShapeMismatch(other);
-        if (other.nCols == 1) {
+        if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     vals[i][j] += other[j][0];
                 }
             }
         }
-        if (other.nRows == 1) {
+        if (other.nRows == 1 && other.nCols == nCols) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     vals[i][j] += other[0][j];
@@ -223,14 +244,14 @@ public:
 
     Matrix operator-=(const Matrix& other) {
         this->checkShapeMismatch(other);
-        if (other.nCols == 1) {
+        if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     vals[i][j] -= other[j][0];
                 }
             }
         }
-        if (other.nRows == 1) {
+        if (other.nRows == 1 && other.nCols == nCols) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     vals[i][j] -= other[0][j];
@@ -249,14 +270,14 @@ public:
 
     Matrix operator*=(const Matrix& other) {
         this->checkShapeMismatch(other);
-        if (other.nCols == 1) {
+        if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     vals[i][j] *= other[j][0];
                 }
             }
         }
-        if (other.nRows == 1) {
+        if (other.nRows == 1 && other.nCols == nCols) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
                     vals[i][j] *= other[0][j];
@@ -273,6 +294,80 @@ public:
         return *this;
     }
 
+    Matrix colWiseSum() const {
+        Matrix res(this->nRows, 1, 0.0f);
+        for (int j = 0; j < nCols; j++) {
+            for (int i = 0; i < nRows; i++) {
+                res[i][0] += vals[i][j];
+            }
+        }
+        return res;
+    }
+
+    Matrix rowWiseSum() const {
+        Matrix res(1, this->nCols, 0.0f);
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                res[0][j] += vals[i][j];
+            }
+        }
+        return res;
+    }
+
+    Matrix rowWiseMean() const {
+        if (nRows == 0) {
+            throw std::runtime_error("cant do rowWise mean when nRowos is 0!\n");
+        }
+        Matrix res(nRows, 1, 0.0f);
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                res[i][0] += vals[i][j];
+            }
+        }
+        for (int i = 0; i < nRows; i++) {
+            res[i][0] /= nRows;
+        }
+        return res;
+    }
+
+    Matrix colWiseMean() const {
+        if (nCols == 0) {
+            throw std::runtime_error("cant do colWise mean when nRowos is 0!\n");
+        }
+        Matrix res(1, nCols, 0.0f);
+        for (int j = 0; j < nCols; j++) {
+            for (int i = 0; i < nRows; i++) {
+                res[0][j] += vals[i][j];
+            }
+        }
+        for (int j = 0; j < nCols; j++) {
+            res[0][j] /= nCols;
+        }
+        return res;
+    }
+    
+    Matrix mean(const int axis = 0) const {
+        if (axis == 0) {
+            return this->rowWiseMean();
+        } else if (axis == 1) {
+            return this->colWiseMean();
+        } else {
+            throw std::runtime_error("axis should be either 0 or 1 in mean!\n");
+        }
+
+        
+    }
+
+    double sum() const {
+        double res = 0.0f;
+        for (const std::vector<double>& row : vals) {
+            for (const double n : row) {
+                res += n;
+            }
+        }
+        return res;
+    }
+
     Matrix transpose()  {
         Matrix res(nCols, nRows, 0.0f);
         for (int i = 0; i < nRows; i++) {
@@ -281,6 +376,10 @@ public:
             }
         }
         return res;
+    }
+
+    Matrix T() {
+        return this->transpose();
     }
 
     void print() const {
@@ -319,14 +418,30 @@ Matrix matMul(const Matrix& mat1, const Matrix& mat2) {
     return res;
 }
 
-void ReLU(Matrix& mat) {
+Matrix ReLU(const Matrix& mat) {
+    Matrix res(mat.nRows, mat.nCols, 0.0f);
     for (int i = 0; i < mat.nRows; i++) {
         for (int j = 0; j < mat.nCols; j++) {
             if (mat[i][j] < 0) {
-                mat[i][j] = 0;
+                res[i][j] = 0;
+            } else {
+                res[i][j] = mat[i][j];
             }
         }
     }
+    return res;
+}
+
+Matrix dReLU(const Matrix& mat) {
+    Matrix res(mat.nRows, mat.nCols, 0.0f);
+    for (int i = 0; i < mat.nRows; i++) {
+        for (int j = 0; j < mat.nCols; j++) {
+            if (mat[i][j] > 0) {
+                res[i][j] = 1.0f;
+            }
+        }
+    }
+    return res;
 }
 
 double MSE(const Matrix& preds, const Matrix& labels) {
@@ -368,6 +483,11 @@ public:
         lastOut = res;
         return res;
     }
+
+    void zero_grad() {
+        weightGrad = Matrix(outDim, inDim, 0.0f);
+        biasGrad = Matrix(1, outDim, 0.0f);
+    }
 };
 
 
@@ -384,14 +504,49 @@ public:
     {};
 
     Matrix forward(const Matrix& vals) {
-        Matrix res = layer1.forward(vals);
-        ReLU(res);
-        res = layer2.forward(res);
-        ReLU(res);
-        res = layer3.forward(res);
+        Matrix res = this->layer1.forward(vals);
+        res = ReLU(res);
+        res = this->layer2.forward(res);
+        res = ReLU(res);
+        res = this->layer3.forward(res);
         return res;
     }
     
+    void backward(const Matrix& vals, const Matrix& labels) {
+        Matrix loss_grad = layer3.lastOut - labels;
+
+        Matrix delta_layer3 = loss_grad;
+
+        this->layer3.weightGrad = matMul(delta_layer3.T(), ReLU(this->layer2.lastOut));
+
+        this->layer3.biasGrad = delta_layer3.rowWiseSum();
+        Matrix delta_layer2 = matMul(delta_layer3, this->layer3.weight) * dReLU(this->layer2.lastOut);
+
+
+        this->layer2.weightGrad = matMul(delta_layer2.T(), ReLU(this->layer1.lastOut));
+        this->layer2.biasGrad = delta_layer2.rowWiseSum();
+        Matrix delta_layer1 = matMul(delta_layer2, this->layer2.weight) * dReLU(this->layer1.lastOut);
+
+        this->layer1.weightGrad = matMul(delta_layer1.T(), vals);
+        this->layer1.biasGrad = delta_layer1.rowWiseSum();
+    }
+    
+    void updateWeigths(const double lr) {
+        layer1.weight -= layer1.weightGrad * lr;
+        layer1.bias -= layer1.biasGrad * lr;
+
+        layer2.weight -= layer2.weightGrad * lr;
+        layer2.bias -= layer2.biasGrad * lr;
+
+        layer3.weight -= layer3.weightGrad * lr;
+        layer3.bias -= layer3.biasGrad * lr;
+    }
+
+    void zeroGrad() {
+        for (Linear& layer : std::vector<Linear>{layer1, layer2, layer3}) {
+            layer.zero_grad();
+        }
+    }
 
 };
 
@@ -439,12 +594,17 @@ int main() {
     const int out_dim = labels.nCols;
     Network net = Network(in_dim, hidden_dim, out_dim);
     
+    const double lr = 1e-7;
+    const int epochs = 150;
 
-    Matrix out = net.forward(vals);
+    for (int i = 0; i < epochs; i++) {
+        Matrix out = net.forward(vals);
 
-    double loss = MSE(out, labels);
-    printf("%f\n", loss);
-
+        net.backward(vals, labels);
+        net.updateWeigths(lr);
+        double loss = MSE(out, labels);
+        printf("epoch: %d, loss: %f\n", i, loss);
+    }
 
     return 0;
 }
