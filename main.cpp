@@ -83,6 +83,19 @@ public:
         return res;
     }
 
+    Matrix operator/(const float x) const {
+        Matrix res(*this);
+        if (x == 0.0f) {
+            throw std::runtime_error("cant divide by 0 in matrix overloading!\n");
+        }
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                res[i][j] /= x;
+            }
+        }
+        return res;
+    }
+
     Matrix operator+=(const float x) {
         for (int i = 0; i < nRows; i++) {
             for (int j = 0; j < nCols; j++) {
@@ -141,7 +154,7 @@ public:
         if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
-                    res[i][j] += other[j][0];
+                    res[i][j] += other[i][0];
                 }
             }
         }
@@ -168,7 +181,7 @@ public:
         if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
-                    res[i][j] -= other[j][0];
+                    res[i][j] -= other[i][0];
                 }
             }
         }
@@ -195,7 +208,7 @@ public:
         if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
-                    res[i][j] *= other[j][0];
+                    res[i][j] *= other[i][0];
                 }
             }
         }
@@ -221,7 +234,7 @@ public:
         if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
-                    vals[i][j] += other[j][0];
+                    vals[i][j] += other[i][0];
                 }
             }
         }
@@ -247,7 +260,7 @@ public:
         if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
-                    vals[i][j] -= other[j][0];
+                    vals[i][j] -= other[i][0];
                 }
             }
         }
@@ -273,7 +286,7 @@ public:
         if (other.nRows == nRows && other.nCols == 1) {
             for (int i = 0; i < nRows; i++) {
                 for (int j = 0; j < nCols; j++) {
-                    vals[i][j] *= other[j][0];
+                    vals[i][j] *= other[i][0];
                 }
             }
         }
@@ -444,6 +457,22 @@ Matrix dReLU(const Matrix& mat) {
     return res;
 }
 
+double exp_sum(const double sum, const double num) {
+    return sum + std::exp(num);
+}
+
+Matrix softmax(const Matrix& mat) {
+    Matrix res(mat.nRows, mat.nCols, 0.0f);
+    for (int i = 0; i < mat.nRows; i++) {
+        const double row_exp_sum = std::accumulate(
+                mat[i].begin(), mat[i].end(), 0.0f, exp_sum);
+        for (int j = 0; j < mat.nCols; j++) {
+            res[i][j] = std::exp(mat[i][j]) / row_exp_sum;
+        }
+    }
+    return res;
+}
+
 double MSE(const Matrix& preds, const Matrix& labels) {
     if (preds.nCols != 1 || labels.nCols != 1 || preds.nRows != labels.nRows) {
         preds.printShapeMismatch(labels);
@@ -604,11 +633,10 @@ int main() {
     Network net = Network(in_dim, hidden_dim, out_dim);
     
     const double lr = 1e-6;
-    const int epochs = 50;
+    const int epochs = 20;
 
     for (int i = 0; i < epochs; i++) {
         Matrix out = net.forward(vals);
-
         net.backward(vals, labels);
         net.updateWeigths(lr);
         double loss = MSE(out, labels);
