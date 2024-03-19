@@ -396,7 +396,7 @@ public:
 
     void printShapeMismatch(const Matrix& other) const {
         printf("Shape mismatch!\nmat1 shape: (%d, %d)\nmat2 shape: (%d, %d)\n",
-                nRows, nCols,
+                this->nRows, this->nCols,
                 other.nRows, other.nCols);
     }
 };
@@ -456,7 +456,7 @@ double MSE(const Matrix& preds, const Matrix& labels) {
         diffs.push_back(diff * diff);
     }
     double res = std::accumulate(diffs.begin(), diffs.end(), 0.0f);
-    return res;
+    return res / labels.nRows;
 }
 
 struct Linear {
@@ -517,28 +517,38 @@ public:
 
         Matrix delta_layer3 = loss_grad;
 
-        this->layer3.weightGrad = matMul(delta_layer3.T(), ReLU(this->layer2.lastOut));
+        this->layer3.weightGrad = matMul(
+                delta_layer3.T(), ReLU(this->layer2.lastOut));
         this->layer3.biasGrad = delta_layer3.rowWiseSum();
-        Matrix delta_layer2 = matMul(delta_layer3, this->layer3.weight) * dReLU(this->layer2.lastOut);
+        Matrix delta_layer2 = matMul(delta_layer3, this->layer3.weight) *\
+                              dReLU(this->layer2.lastOut);
 
 
-        this->layer2.weightGrad = matMul(delta_layer2.T(), ReLU(this->layer1.lastOut));
+        this->layer2.weightGrad = matMul(
+                delta_layer2.T(), ReLU(this->layer1.lastOut));
         this->layer2.biasGrad = delta_layer2.rowWiseSum();
-        Matrix delta_layer1 = matMul(delta_layer2, this->layer2.weight) * dReLU(this->layer1.lastOut);
+        Matrix delta_layer1 = matMul(delta_layer2, this->layer2.weight) *\
+                              dReLU(this->layer1.lastOut);
 
         this->layer1.weightGrad = matMul(delta_layer1.T(), vals);
         this->layer1.biasGrad = delta_layer1.rowWiseSum();
     }
     
     void updateWeigths(const double lr) {
-        layer1.weight -= layer1.weightGrad * lr;
-        layer1.bias -= layer1.biasGrad * lr;
+        this->layer1.weightGrad *= lr;
+        this->layer1.biasGrad *= lr;
+        this->layer1.weight -= this->layer1.weightGrad;
+        this->layer1.bias -= this->layer1.biasGrad;
 
-        layer2.weight -= layer2.weightGrad * lr;
-        layer2.bias -= layer2.biasGrad * lr;
+        this->layer2.weightGrad *= lr;
+        this->layer2.biasGrad *= lr;
+        this->layer2.weight -= this->layer2.weightGrad;
+        this->layer2.bias -= this->layer2.biasGrad;
 
-        layer3.weight -= layer3.weightGrad * lr;
-        layer3.bias -= layer3.biasGrad * lr;
+        this->layer3.weightGrad *= lr;
+        this->layer3.biasGrad *= lr;
+        this->layer3.weight -= this->layer3.weightGrad;
+        this->layer3.bias -= this->layer3.biasGrad;
     }
 
     void zeroGrad() {
@@ -593,8 +603,8 @@ int main() {
     const int out_dim = labels.nCols;
     Network net = Network(in_dim, hidden_dim, out_dim);
     
-    const double lr = 1e-7;
-    const int epochs = 150;
+    const double lr = 1e-6;
+    const int epochs = 50;
 
     for (int i = 0; i < epochs; i++) {
         Matrix out = net.forward(vals);
