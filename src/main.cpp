@@ -1,3 +1,4 @@
+#include <fstream>
 #include <algorithm>
 #include <iostream>
 #include <numeric>
@@ -617,6 +618,83 @@ Matrix getLabels(const double low, const double high, const int n_samples,
 }
 
 
+
+
+std::vector<std::vector<double>> readMNISTImages(const std::string& filename, int numImages) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return {};
+    }
+
+    int magicNumber, numImages_, numRows, numCols;
+    file.read(reinterpret_cast<char*>(&magicNumber), sizeof(magicNumber));
+    file.read(reinterpret_cast<char*>(&numImages_), sizeof(numImages_));
+    file.read(reinterpret_cast<char*>(&numRows), sizeof(numRows));
+    file.read(reinterpret_cast<char*>(&numCols), sizeof(numCols));
+
+    magicNumber = __builtin_bswap32(magicNumber);
+    numImages_ = __builtin_bswap32(numImages_);
+    numRows = __builtin_bswap32(numRows);
+    numCols = __builtin_bswap32(numCols);
+
+    if (magicNumber != 2051) {
+        std::cerr << "Invalid magic number, expected 2051, got " << magicNumber << std::endl;
+        return {};
+    }
+
+    if (numImages > numImages_) {
+        std::cerr << "Requested more images than available in the dataset" << std::endl;
+        return {};
+    }
+
+    std::vector<std::vector<double>> images(numImages, std::vector<double>(numRows * numCols));
+
+    for (int i = 0; i < numImages; ++i) {
+        for (int j = 0; j < numRows * numCols; ++j) {
+            unsigned char pixel;
+            file.read(reinterpret_cast<char*>(&pixel), sizeof(pixel));
+            images[i][j] = pixel / 255.0; // Normalize pixel values to [0, 1]
+        }
+    }
+
+    return images;
+}
+
+std::vector<int> readMNISTLabels(const std::string& filename, int numLabels) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return {};
+    }
+
+    int magicNumber, numLabels_;
+    file.read(reinterpret_cast<char*>(&magicNumber), sizeof(magicNumber));
+    file.read(reinterpret_cast<char*>(&numLabels_), sizeof(numLabels_));
+
+    magicNumber = __builtin_bswap32(magicNumber);
+    numLabels_ = __builtin_bswap32(numLabels_);
+
+    if (magicNumber != 2049) {
+        std::cerr << "Invalid magic number, expected 2049, got " << magicNumber << std::endl;
+        return {};
+    }
+
+    if (numLabels > numLabels_) {
+        std::cerr << "Requested more labels than available in the dataset" << std::endl;
+        return {};
+    }
+
+    std::vector<int> labels(numLabels);
+    for (int i = 0; i < numLabels; ++i) {
+        unsigned char label;
+        file.read(reinterpret_cast<char*>(&label), sizeof(label));
+        labels[i] = label;
+    }
+
+    return labels;
+}
+
 int main() {
     const double low = -10.0f;
     const double high = 10.0f;
@@ -624,24 +702,34 @@ int main() {
     const double mean = 1.0f;
     const double scale = 0.5f;
     std::vector<double> pre_vals = linspace(low, high, n_samples);
-    Matrix vals = Matrix(pre_vals);
-    Matrix labels = getLabels(low, high, n_samples, mean, scale);
+//    Matrix vals = Matrix(pre_vals);
+//    Matrix labels = getLabels(low, high, n_samples, mean, scale);
 
-    const int in_dim = vals.nCols;
-    const int hidden_dim = 10;
-    const int out_dim = labels.nCols;
-    Network net = Network(in_dim, hidden_dim, out_dim);
-    
-    const double lr = 1e-6;
-    const int epochs = 20;
+//    const int in_dim = vals.nCols;
+//    const int hidden_dim = 10;
+//    const int out_dim = labels.nCols;
+//    Network net = Network(in_dim, hidden_dim, out_dim);
+//    
+//    const double lr = 1e-6;
+//    const int epochs = 20;
 
-    for (int i = 0; i < epochs; i++) {
-        Matrix out = net.forward(vals);
-        net.backward(vals, labels);
-        net.updateWeigths(lr);
-        double loss = MSE(out, labels);
-        printf("epoch: %d, loss: %f\n", i, loss);
-    }
+    const std::string imagesFile = "../public/train_images.ubyte";
+    const std::string labelsFile = "../public/train_labels.ubyte";
+    const int numImages = 60000; // Number of images in the dataset
+
+    // Read images and labels
+    std::vector<std::vector<double>> images = readMNISTImages(imagesFile, numImages);
+    std::vector<int> labels = readMNISTLabels(labelsFile, numImages);
+
+    // Example usage: print label of first image
+    std::cout << "Label of first image: " << labels[0] << std::endl;
+//    for (int i = 0; i < epochs; i++) {
+//        Matrix out = net.forward(vals);
+//        net.backward(vals, labels);
+//        net.updateWeigths(lr);
+//        double loss = MSE(out, labels);
+//        printf("epoch: %d, loss: %f\n", i, loss);
+//    }
 
     return 0;
 }
