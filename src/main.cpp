@@ -37,14 +37,7 @@ public:
 
     Matrix(const std::vector<std::vector<double>>& pre_vals)
     : nRows(pre_vals.size()), nCols(pre_vals[0].size()),
-    vals(pre_vals.size(), std::vector<double>(pre_vals[0].size(), 0.0f)) {
-
-        for (size_t i = 0; i < pre_vals.size(); i++) {
-            for (size_t j = 0; j < pre_vals.size(); j++) {
-                vals[i][j] = pre_vals[i][j];
-            }
-        }
-    }
+    vals(pre_vals) {}
 
     std::vector<double>& operator[](const int idx) {
         return vals[idx];
@@ -396,6 +389,18 @@ public:
         return this->transpose();
     }
 
+    Matrix rowSlice(const int idx_start, const int idx_end) const {
+        int res_n_rows = idx_end - idx_start;
+        if (res_n_rows <= 0) {
+            throw std::runtime_error("cant slice <= 0 rows");
+        }
+        Matrix res(res_n_rows, this->nCols);
+        for (int i = 0; i < res_n_rows; i++) {
+            res[i] = this->vals[i];
+        }
+        return res;
+    }
+
     void print() const {
         printf("{\n");
         for (const std::vector<double> &row : vals) {
@@ -414,6 +419,15 @@ public:
                 other.nRows, other.nCols);
     }
 };
+
+template <typename T>
+void print_vector(const std::vector<T> vec) {
+    printf("{");
+    for (const T e : vec) {
+        std::cout << e << " ";
+    }
+    printf("}\n");
+}
 
 
 Matrix matMul(const Matrix& mat1, const Matrix& mat2) {
@@ -462,13 +476,20 @@ double exp_sum(const double sum, const double num) {
     return sum + std::exp(num);
 }
 
+
 Matrix softmax(const Matrix& mat) {
     Matrix res(mat.nRows, mat.nCols, 0.0f);
     for (int i = 0; i < mat.nRows; i++) {
-        const double row_exp_sum = std::accumulate(
-                mat[i].begin(), mat[i].end(), 0.0f, exp_sum);
+        double max_val = *std::max_element(mat[i].begin(), mat[i].end());
+        
+        double row_exp_sum = 0.0;
         for (int j = 0; j < mat.nCols; j++) {
-            res[i][j] = std::exp(mat[i][j]) / row_exp_sum;
+            row_exp_sum += std::exp(mat[i][j] - max_val);
+        }
+        
+        for (int j = 0; j < mat.nCols; j++) {
+            double softmax_val = std::exp(mat[i][j] - max_val) / row_exp_sum;
+            res[i][j] = softmax_val;
         }
     }
     return res;
@@ -488,6 +509,20 @@ double MSE(const Matrix& preds, const Matrix& labels) {
     double res = std::accumulate(diffs.begin(), diffs.end(), 0.0f);
     return res / labels.nRows;
 }
+
+double crossEntropyLoss(const Matrix& preds, const Matrix& labels) {
+    double res = 0.0f;
+    preds.checkShapeMismatch(labels);
+    for (int i = 0; i < preds.nRows; i++) {
+        double entry_diff = 0.0f;
+        for (int j = 0; j < preds.nCols; j++) {
+            entry_diff += preds[i][j] * std::log(labels[i][j] + 1e-16);
+        }
+        res -= entry_diff;
+    }
+    return res;
+}
+
 
 struct Linear {
 public:
@@ -521,6 +556,42 @@ public:
 };
 
 
+double accuracy(const Matrix& preds, const Matrix& labels) {
+    preds.checkShapeMismatch(labels);
+    int n_correct = 0;
+    for (int i = 0; i < preds.nRows; i++) {
+        int max_idx_pred = -1;
+        int max_idx_label = -1;
+        double max_pred = 0.0f;
+        double max_label = 0.0f;
+        for (int j = 0; j < preds.nCols; j++) {
+            if (preds[i][j] > max_pred) {
+                max_pred = preds[i][j]; 
+                max_idx_pred = j;
+            }
+            if (labels[i][j] > max_label) {
+                max_label = labels[i][j]; 
+                max_idx_label = j;
+            }
+        }
+        if (max_idx_pred == -1 || max_idx_label == -1) {
+            print_vector(preds[i]);
+            print_vector(labels[i]);
+            printf("max_idx_pred = %d, max_idx_label = %d\n",
+                    max_idx_pred, max_idx_label);
+            printf("hello world\n");
+            throw std::runtime_error("not found max idx for label or pred!\n");
+        }
+        if (max_idx_pred == max_idx_label) {
+            n_correct++;
+        }
+    }
+    double accuracy = static_cast<double>(n_correct) / 
+                      static_cast<double>(preds.nRows);
+    return accuracy;
+}
+
+
 struct Network {
 public:
     Linear layer1;
@@ -539,6 +610,7 @@ public:
         res = this->layer2.forward(res);
         res = ReLU(res);
         res = this->layer3.forward(res);
+        res = softmax(res);
         return res;
     }
     
@@ -552,7 +624,6 @@ public:
         this->layer3.biasGrad = delta_layer3.rowWiseSum();
         Matrix delta_layer2 = matMul(delta_layer3, this->layer3.weight) *\
                               dReLU(this->layer2.lastOut);
-
 
         this->layer2.weightGrad = matMul(
                 delta_layer2.T(), ReLU(this->layer1.lastOut));
@@ -620,73 +691,83 @@ Matrix getLabels(const double low, const double high, const int n_samples,
 
 
 
-std::vector<std::vector<double>> readMNISTImages(const std::string& filename, int numImages) {
+std::vector<std::vector<double>> readMNISTImages(
+        const std::string& filename, int n_imgs) {
     std::ifstream file(filename, std::ios::binary);
     if (!file) {
         std::cerr << "Failed to open file: " << filename << std::endl;
         return {};
     }
 
-    int magicNumber, numImages_, numRows, numCols;
-    file.read(reinterpret_cast<char*>(&magicNumber), sizeof(magicNumber));
-    file.read(reinterpret_cast<char*>(&numImages_), sizeof(numImages_));
-    file.read(reinterpret_cast<char*>(&numRows), sizeof(numRows));
-    file.read(reinterpret_cast<char*>(&numCols), sizeof(numCols));
+    int magic_number, n_imgs_, n_rows, n_cols;
+    file.read(reinterpret_cast<char*>(&magic_number), sizeof(magic_number));
+    file.read(reinterpret_cast<char*>(&n_imgs_), sizeof(n_imgs_));
+    file.read(reinterpret_cast<char*>(&n_rows), sizeof(n_rows));
+    file.read(reinterpret_cast<char*>(&n_cols), sizeof(n_cols));
 
-    magicNumber = __builtin_bswap32(magicNumber);
-    numImages_ = __builtin_bswap32(numImages_);
-    numRows = __builtin_bswap32(numRows);
-    numCols = __builtin_bswap32(numCols);
+    magic_number = __builtin_bswap32(magic_number);
+    n_imgs_ = __builtin_bswap32(n_imgs_);
+    n_rows = __builtin_bswap32(n_rows);
+    n_cols = __builtin_bswap32(n_cols);
 
-    if (magicNumber != 2051) {
-        std::cerr << "Invalid magic number, expected 2051, got " << magicNumber << std::endl;
+    if (magic_number != 2051) {
+        std::cerr << "Invalid magic number, expected 2051, got "
+            << magic_number << std::endl;
         return {};
     }
 
-    if (numImages > numImages_) {
-        std::cerr << "Requested more images than available in the dataset" << std::endl;
+    if (n_imgs > n_imgs_) {
+        std::cerr << "Requested more images than available in the dataset"
+            << std::endl;
         return {};
     }
 
-    std::vector<std::vector<double>> images(numImages, std::vector<double>(numRows * numCols));
+    std::vector<std::vector<double>> images(
+            n_imgs, std::vector<double>(n_rows * n_cols));
 
-    for (int i = 0; i < numImages; ++i) {
-        for (int j = 0; j < numRows * numCols; ++j) {
+    for (int i = 0; i < n_imgs; ++i) {
+        for (int j = 0; j < n_rows * n_cols; ++j) {
             unsigned char pixel;
             file.read(reinterpret_cast<char*>(&pixel), sizeof(pixel));
             images[i][j] = pixel / 255.0; // Normalize pixel values to [0, 1]
+            if (std::isnan(images[i][j])) {
+                printf("%c / 255.0 results in -nan\n", pixel);
+                throw std::runtime_error("nan in reading images!\n");
+            }
         }
     }
 
     return images;
 }
 
-std::vector<int> readMNISTLabels(const std::string& filename, int numLabels) {
+std::vector<int> readMNISTLabels(const std::string& filename, int n_labels) {
     std::ifstream file(filename, std::ios::binary);
     if (!file) {
         std::cerr << "Failed to open file: " << filename << std::endl;
         return {};
     }
 
-    int magicNumber, numLabels_;
-    file.read(reinterpret_cast<char*>(&magicNumber), sizeof(magicNumber));
-    file.read(reinterpret_cast<char*>(&numLabels_), sizeof(numLabels_));
+    int magic_number, n_labels_;
+    file.read(reinterpret_cast<char*>(&magic_number), sizeof(magic_number));
+    file.read(reinterpret_cast<char*>(&n_labels_), sizeof(n_labels_));
 
-    magicNumber = __builtin_bswap32(magicNumber);
-    numLabels_ = __builtin_bswap32(numLabels_);
+    magic_number = __builtin_bswap32(magic_number);
+    n_labels_ = __builtin_bswap32(n_labels_);
 
-    if (magicNumber != 2049) {
-        std::cerr << "Invalid magic number, expected 2049, got " << magicNumber << std::endl;
+    if (magic_number != 2049) {
+        std::cerr << "Invalid magic number, expected 2049, got "
+            << magic_number << std::endl;
         return {};
     }
 
-    if (numLabels > numLabels_) {
-        std::cerr << "Requested more labels than available in the dataset" << std::endl;
+    if (n_labels > n_labels_) {
+        std::cerr << "Requested more labels than available in the dataset"
+            << std::endl;
         return {};
     }
 
-    std::vector<int> labels(numLabels);
-    for (int i = 0; i < numLabels; ++i) {
+    std::vector<int> labels(n_labels);
+    for (int i = 0; i < n_labels; ++i) {
         unsigned char label;
         file.read(reinterpret_cast<char*>(&label), sizeof(label));
         labels[i] = label;
@@ -695,41 +776,68 @@ std::vector<int> readMNISTLabels(const std::string& filename, int numLabels) {
     return labels;
 }
 
+
+Matrix encodeLabels(const std::vector<int>& vec, const int n_classes) {
+    Matrix res(vec.size(), n_classes);
+    for (size_t i = 0; i < vec.size(); i++) {
+        for (int j = 0; j < n_classes; j++) {
+            if (vec[i] == j) {
+                res[i][j] = 1.0f;
+            }
+        }
+    }
+    return res;
+}
+
+void train(const int n_epochs, const int batch_size, 
+           const Matrix& images, const Matrix& labels, 
+           Network& net, const double lr) {
+    for (int i = 0; i < n_epochs; i++) {
+        for (int b_start = 0; b_start < images.nRows; b_start += batch_size) {
+            int b_end = b_start + batch_size;
+            Matrix b_images = images.rowSlice(b_start, b_end);
+            Matrix b_labels = labels.rowSlice(b_start, b_end);
+            Matrix out = net.forward(b_images);
+            out = softmax(out);
+            net.backward(b_images, b_labels);
+            net.updateWeigths(lr);
+        }
+        double acc = 0.0f;
+        double loss = 0.0f;
+        for (int b_start = 0; b_start < images.nRows; b_start += batch_size) {
+            int b_end = b_start + batch_size;
+            Matrix b_images = images.rowSlice(b_start, b_end);
+            Matrix b_labels = labels.rowSlice(b_start, b_end);
+            Matrix out = net.forward(b_images);
+            out = softmax(out);
+            acc += accuracy(out, b_labels);
+            loss += crossEntropyLoss(out, b_labels);
+        }
+        double epoch_acc = acc / images.nRows;
+        double epoch_loss = loss / images.nRows;
+        printf("Epoch = %d\tAccuracy = %f\tLoss = %f\n", i, epoch_acc, epoch_loss);
+
+    }
+}
+
+
 int main() {
-    const double low = -10.0f;
-    const double high = 10.0f;
-    const int n_samples = 1000;
-    const double mean = 1.0f;
-    const double scale = 0.5f;
-    std::vector<double> pre_vals = linspace(low, high, n_samples);
-//    Matrix vals = Matrix(pre_vals);
-//    Matrix labels = getLabels(low, high, n_samples, mean, scale);
-
-//    const int in_dim = vals.nCols;
-//    const int hidden_dim = 10;
-//    const int out_dim = labels.nCols;
-//    Network net = Network(in_dim, hidden_dim, out_dim);
-//    
-//    const double lr = 1e-6;
-//    const int epochs = 20;
-
-    const std::string imagesFile = "../public/train_images.ubyte";
-    const std::string labelsFile = "../public/train_labels.ubyte";
-    const int numImages = 60000; // Number of images in the dataset
+    const std::string images_file = "../public/train_images.ubyte";
+    const std::string labels_file = "../public/train_labels.ubyte";
+    const int num_images = 60000; // Number of images in the dataset
 
     // Read images and labels
-    std::vector<std::vector<double>> images = readMNISTImages(imagesFile, numImages);
-    std::vector<int> labels = readMNISTLabels(labelsFile, numImages);
+    std::vector<std::vector<double>> images = readMNISTImages(images_file, num_images);
+    std::vector<int> labels = readMNISTLabels(labels_file, num_images);
 
-    // Example usage: print label of first image
-    std::cout << "Label of first image: " << labels[0] << std::endl;
-//    for (int i = 0; i < epochs; i++) {
-//        Matrix out = net.forward(vals);
-//        net.backward(vals, labels);
-//        net.updateWeigths(lr);
-//        double loss = MSE(out, labels);
-//        printf("epoch: %d, loss: %f\n", i, loss);
-//    }
+    Matrix images_mat = Matrix(images);
+    Matrix labels_mat = encodeLabels(labels, 10);
+    
+    Network net(images_mat.nCols, 32, labels_mat.nCols);
 
+    const int n_epochs = 100;
+    const int batch_size = 64;
+    const double lr = 3e-3;
+    train(n_epochs, batch_size, images_mat, labels_mat, net, lr);
     return 0;
 }
