@@ -1,12 +1,11 @@
 #!/usr/bin/bash
 
 declare -A LINKS=(
-    ["train_images"]="http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz"
-    ["train_labels"]="http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz"
-    ["test_images"]="http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz"
-    ["test_labels"]="http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz"
+    ["train_images"]="https://raw.githubusercontent.com/fgnt/mnist/master/train-images-idx3-ubyte.gz"
+    ["train_labels"]="https://raw.githubusercontent.com/fgnt/mnist/master/train-labels-idx1-ubyte.gz"
+    ["test_images"]="https://raw.githubusercontent.com/fgnt/mnist/master/t10k-images-idx3-ubyte.gz"
+    ["test_labels"]="https://raw.githubusercontent.com/fgnt/mnist/master/t10k-labels-idx1-ubyte.gz"
 );
-
 echo "Downloading MNIST dataset files...";
 
 for LINK in "${!LINKS[@]}"; do

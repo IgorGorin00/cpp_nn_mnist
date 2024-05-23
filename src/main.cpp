@@ -611,6 +611,7 @@ public:
         res = ReLU(res);
         res = this->layer3.forward(res);
         res = softmax(res);
+        this->layer3.lastOut = res;
         return res;
     }
     
@@ -798,7 +799,6 @@ void train(const int n_epochs, const int batch_size,
             Matrix b_images = images.rowSlice(b_start, b_end);
             Matrix b_labels = labels.rowSlice(b_start, b_end);
             Matrix out = net.forward(b_images);
-            out = softmax(out);
             net.backward(b_images, b_labels);
             net.updateWeigths(lr);
         }
