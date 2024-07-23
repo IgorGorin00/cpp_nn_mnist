@@ -47,7 +47,7 @@ public:
         return vals[idx];
     }
 
-    Matrix operator+(const float x) const {
+    Matrix operator+(const double x) const {
         Matrix res(*this);
         for (int i = 0; i < nRows; i++) {
             for (int j = 0; j < nCols; j++) {
@@ -57,7 +57,7 @@ public:
         return res;
     }
 
-    Matrix operator-(const float x) const {
+    Matrix operator-(const double x) const {
         Matrix res(*this);
         for (int i = 0; i < nRows; i++) {
             for (int j = 0; j < nCols; j++) {
@@ -67,7 +67,7 @@ public:
         return res;
     }
 
-    Matrix operator*(const float x) const {
+    Matrix operator*(const double x) const {
         Matrix res(*this);
         for (int i = 0; i < nRows; i++) {
             for (int j = 0; j < nCols; j++) {
@@ -77,7 +77,7 @@ public:
         return res;
     }
 
-    Matrix operator/(const float x) const {
+    Matrix operator/(const double x) const {
         Matrix res(*this);
         if (x == 0.0f) {
             throw std::runtime_error("cant divide by 0 in matrix overloading!\n");
@@ -90,7 +90,7 @@ public:
         return res;
     }
 
-    Matrix operator+=(const float x) {
+    Matrix operator+=(const double x) {
         for (int i = 0; i < nRows; i++) {
             for (int j = 0; j < nCols; j++) {
                 vals[i][j] += x;
@@ -99,7 +99,7 @@ public:
         return *this;
     }
 
-    Matrix operator-=(const float x) {
+    Matrix operator-=(const double x) {
         for (int i = 0; i < nRows; i++) {
             for (int j = 0; j < nCols; j++) {
                 vals[i][j] -= x;
@@ -108,7 +108,7 @@ public:
         return *this;
     }
 
-    Matrix operator*=(const float x) {
+    Matrix operator*=(const double x) {
         for (int i = 0; i < nRows; i++) {
             for (int j = 0; j < nCols; j++) {
                 vals[i][j] *= x;
@@ -117,7 +117,7 @@ public:
         return *this;
     }
 
-    Matrix operator/=(const float x) {
+    Matrix operator/=(const double x) {
         if (x == 0.0f) {
             throw std::runtime_error("cant divide by 0 in matrix overloading!\n");
         }
@@ -495,202 +495,6 @@ Matrix softmax(const Matrix& mat) {
     return res;
 }
 
-double MSE(const Matrix& preds, const Matrix& labels) {
-    if (preds.nCols != 1 || labels.nCols != 1 || preds.nRows != labels.nRows) {
-        preds.printShapeMismatch(labels);
-        throw std::runtime_error("Shape mismatch in MSE!\n");
-    }
-    std::vector<double> diffs;
-    diffs.reserve(labels.nRows);
-    for (int i = 0; i < labels.nRows; i++) {
-        double diff = preds[i][0] - labels[i][0];
-        diffs.push_back(diff * diff);
-    }
-    double res = std::accumulate(diffs.begin(), diffs.end(), 0.0f);
-    return res / labels.nRows;
-}
-
-double crossEntropyLoss(const Matrix& preds, const Matrix& labels) {
-    double res = 0.0f;
-    preds.checkShapeMismatch(labels);
-    for (int i = 0; i < preds.nRows; i++) {
-        double entry_diff = 0.0f;
-        for (int j = 0; j < preds.nCols; j++) {
-            entry_diff += preds[i][j] * std::log(labels[i][j] + 1e-16);
-        }
-        res -= entry_diff;
-    }
-    return res;
-}
-
-
-struct Linear {
-public:
-    const int inDim, outDim;
-    Matrix weight;
-    Matrix bias;
-    Matrix weightGrad;
-    Matrix biasGrad;
-    Matrix lastOut;
-
-    Linear(const int in_dim, const int out_dim)
-    : inDim(in_dim), outDim(out_dim),
-    weight(Matrix(out_dim, in_dim, 0.0f, 2.0f / (in_dim + out_dim))),
-    bias(Matrix(1, out_dim, 0.0f)),
-    weightGrad(out_dim, in_dim, 0.0f),
-    biasGrad(1, out_dim, 0.0f),
-    lastOut(1, 1)
-    {};
-
-    Matrix forward(const Matrix& vals) {
-        Matrix res = matMul(vals, weight.transpose());
-        res += bias;
-        lastOut = res;
-        return res;
-    }
-
-    void zero_grad() {
-        weightGrad = Matrix(outDim, inDim, 0.0f);
-        biasGrad = Matrix(1, outDim, 0.0f);
-    }
-};
-
-
-double accuracy(const Matrix& preds, const Matrix& labels) {
-    preds.checkShapeMismatch(labels);
-    int n_correct = 0;
-    for (int i = 0; i < preds.nRows; i++) {
-        int max_idx_pred = -1;
-        int max_idx_label = -1;
-        double max_pred = 0.0f;
-        double max_label = 0.0f;
-        for (int j = 0; j < preds.nCols; j++) {
-            if (preds[i][j] > max_pred) {
-                max_pred = preds[i][j]; 
-                max_idx_pred = j;
-            }
-            if (labels[i][j] > max_label) {
-                max_label = labels[i][j]; 
-                max_idx_label = j;
-            }
-        }
-        if (max_idx_pred == -1 || max_idx_label == -1) {
-            print_vector(preds[i]);
-            print_vector(labels[i]);
-            printf("max_idx_pred = %d, max_idx_label = %d\n",
-                    max_idx_pred, max_idx_label);
-            throw std::runtime_error("not found max idx for label or pred!\n");
-        }
-        if (max_idx_pred == max_idx_label) {
-            n_correct++;
-        }
-    }
-    double accuracy = static_cast<double>(n_correct) / 
-                      static_cast<double>(preds.nRows);
-    return accuracy;
-}
-
-
-struct Network {
-public:
-    Linear layer1;
-    Linear layer2;
-    Linear layer3;
-
-    Network(const int in_dim, const int hidden_dim, const int out_dim)
-    : layer1(in_dim, hidden_dim), 
-    layer2(hidden_dim, hidden_dim),
-    layer3(hidden_dim, out_dim)
-    {};
-
-    Matrix forward(const Matrix& vals) {
-        Matrix res = this->layer1.forward(vals);
-        res = ReLU(res);
-        res = this->layer2.forward(res);
-        res = ReLU(res);
-        res = this->layer3.forward(res);
-        res = softmax(res);
-        this->layer3.lastOut = res;
-        return res;
-    }
-    
-    void backward(const Matrix& vals, const Matrix& labels) {
-        Matrix loss_grad = layer3.lastOut - labels;
-
-        Matrix delta_layer3 = loss_grad;
-
-        this->layer3.weightGrad = matMul(
-                delta_layer3.T(), ReLU(this->layer2.lastOut));
-        this->layer3.biasGrad = delta_layer3.rowWiseSum();
-        Matrix delta_layer2 = matMul(delta_layer3, this->layer3.weight) *\
-                              dReLU(this->layer2.lastOut);
-
-        this->layer2.weightGrad = matMul(
-                delta_layer2.T(), ReLU(this->layer1.lastOut));
-        this->layer2.biasGrad = delta_layer2.rowWiseSum();
-        Matrix delta_layer1 = matMul(delta_layer2, this->layer2.weight) *\
-                              dReLU(this->layer1.lastOut);
-
-        this->layer1.weightGrad = matMul(delta_layer1.T(), vals);
-        this->layer1.biasGrad = delta_layer1.rowWiseSum();
-    }
-    
-    void updateWeigths(const double lr) {
-        this->layer1.weightGrad *= lr;
-        this->layer1.biasGrad *= lr;
-        this->layer1.weight -= this->layer1.weightGrad;
-        this->layer1.bias -= this->layer1.biasGrad;
-
-        this->layer2.weightGrad *= lr;
-        this->layer2.biasGrad *= lr;
-        this->layer2.weight -= this->layer2.weightGrad;
-        this->layer2.bias -= this->layer2.biasGrad;
-
-        this->layer3.weightGrad *= lr;
-        this->layer3.biasGrad *= lr;
-        this->layer3.weight -= this->layer3.weightGrad;
-        this->layer3.bias -= this->layer3.biasGrad;
-    }
-
-    void zeroGrad() {
-        for (Linear& layer : std::vector<Linear>{layer1, layer2, layer3}) {
-            layer.zero_grad();
-        }
-    }
-
-};
-
-std::vector<double> linspace(const double low, const double high,
-        const int n_samples) {
-    if (n_samples == 0) {
-        throw std::runtime_error("cant divide by 0 in linspace!\n");
-    }
-    std::vector<double> res(n_samples);
-    res.reserve(n_samples);
-    const double step = (high - low) / n_samples;
-    for (int i = 0; i < n_samples; i++) {
-        res[i] = low + step * i;
-    }
-    return res;
-}
-
-Matrix getLabels(const double low, const double high, const int n_samples,
-        const float mean, const float scale) {
-    std::vector<double> pre_res = linspace(low, high, n_samples);
-    Matrix mat(n_samples, 1, mean, scale);
-
-    std::random_device rd{};
-    std::mt19937 gen(rd());
-    std::normal_distribution<double> d{mean, scale};
-    for (int i = 0; i < n_samples; i++) {
-        mat[i][0] = std::sin(pre_res[i]) * d(gen);
-    }
-    return mat;
-}
-
-
-
-
 std::vector<std::vector<double>> readMNISTImages(
         const std::string& filename, int n_imgs) {
     std::ifstream file(filename, std::ios::binary);
@@ -776,7 +580,6 @@ std::vector<int> readMNISTLabels(const std::string& filename, int n_labels) {
     return labels;
 }
 
-
 Matrix one_hot_encoding(const std::vector<int>& vec, const int n_classes) {
     Matrix res(vec.size(), n_classes);
     for (size_t i = 0; i < vec.size(); i++) {
@@ -789,40 +592,106 @@ Matrix one_hot_encoding(const std::vector<int>& vec, const int n_classes) {
     return res;
 }
 
-void train(const int n_epochs, const int batch_size, 
-           const Matrix& images, const Matrix& labels, 
-           Network& net, const double lr) {
-    for (int i = 0; i < n_epochs; i++) {
-        for (int b_start = 0; b_start < images.nRows; b_start += batch_size) {
-            int b_end = b_start + batch_size;
-            Matrix b_images = images.rowSlice(b_start, b_end);
-            Matrix b_labels = labels.rowSlice(b_start, b_end);
-            Matrix out = net.forward(b_images);
-            net.backward(b_images, b_labels);
-            net.updateWeigths(lr);
-        }
-        double acc = 0.0f;
-        double loss = 0.0f;
-        for (int b_start = 0; b_start < images.nRows; b_start += batch_size) {
-            int b_end = b_start + batch_size;
-            Matrix b_images = images.rowSlice(b_start, b_end);
-            Matrix b_labels = labels.rowSlice(b_start, b_end);
-            Matrix out = net.forward(b_images);
-            acc += accuracy(out, b_labels);
-            loss += crossEntropyLoss(out, b_labels);
-        }
-        double epoch_acc = acc / images.nRows;
-        double epoch_loss = loss / images.nRows;
-        printf("Epoch = %d\tAccuracy = %f\tLoss = %f\n", i, epoch_acc, epoch_loss);
 
-    }
+std::vector<Matrix> init_params() {
+    Matrix W1(784, 10, 0.0f, 0.5f);
+    Matrix b1(1, 10, 0.0f, 0.5f);
+    Matrix W2(10, 10, 0.0f, 0.5f);
+    Matrix b2 (1, 10, 0.0f, 0.5f);
+    return std::vector<Matrix>{W1, b1, W2, b2};
 }
 
 
+std::vector<Matrix> forward_prop(Matrix& W1, Matrix& b1, Matrix& W2, Matrix& b2, Matrix& X) {
+    Matrix Z1 = matMul(W1, X);
+    Z1 += b1;
+    Matrix A1 = ReLU(Z1);
+    Matrix Z2 = matMul(W2, A1);
+    Z2 += b2;
+    Matrix A2 = softmax(Z2);
+    return std::vector<Matrix>{Z1, A1, Z2, A2};
+}
+
+
+std::vector<Matrix> backward_prob(
+        Matrix& Z1,
+        Matrix& A1,
+        Matrix& Z2,
+        Matrix& A2,
+        Matrix& W1,
+        Matrix& W2,
+        Matrix& X,
+        Matrix& Y) {
+    int m = X.nRows;
+    Matrix dZ2 = A2 - Y;
+    
+    Matrix dW2 = matMul(dZ2, A1.T());
+    dW2 *= 1 / m;
+
+    Matrix db2 = dZ2.rowWiseSum();
+    db2 *= 1 / m;
+
+    Matrix dZ1 = matMul(W2.T(), dZ2) * dReLU(Z1);
+
+    Matrix dW1 = matMul(dZ1, X.T());
+    dW1 *= 1 / m;
+
+    Matrix db1 = dZ1.rowWiseSum();
+    db1 *= 1 / m;
+
+    return std::vector<Matrix>{dW1, db1, dW2, db1};
+}
+
+
+void update_params(
+        Matrix& W1,
+        Matrix& b1,
+        Matrix& W2,
+        Matrix& b2,
+        Matrix& dW1,
+        Matrix& db1,
+        Matrix& dW2,
+        Matrix& db2,
+        double alpha) {
+    W1 -= dW1 * alpha;
+    b1 -= db1 * alpha;
+    W2 -= dW2 * alpha;
+    b2 -= db2 * alpha;
+}
+
+
+std::vector<int> get_predictions(const Matrix& A2) {
+    std::vector<int> res(A2.nRows, 0);
+    for (int i = 0; i < A2.nRows; i++) {
+        int idx_max_elem = std::max_element(A2[i].begin(), A2[i].end()) - A2[i].begin();
+        res[i] = idx_max_elem;
+    }
+    return res;
+}
+
+double get_accuracy(
+        const std::vector<int>& predictions,
+        const std::vector<int>& Y) {
+    int n_correct = 0;
+    if (predictions.size() != Y.size()) {
+        printf("Prds size = %zu\n Labels size = %zu\n",
+                predictions.size(), Y.size());
+        throw std::runtime_error("Preds and labels size mismatch!\n");
+    }
+    for (int i = 0; i < Y.size(); i++) {
+        if (predictions[i] == Y[i]) {
+            n_correct++;
+        }
+    }
+    double res = static_cast<double>(n_correct) / static_cast<double>(Y.size());
+    return res;
+}
+
 int main() {
+
     const std::string images_file = "../public/train_images.ubyte";
     const std::string labels_file = "../public/train_labels.ubyte";
-    const int num_images = 60000; // Number of images in the dataset
+    const int num_images = 10; //60000; // Number of images in the dataset
 
     // Read images and labels
     std::vector<std::vector<double>> images = readMNISTImages(images_file, num_images);
@@ -830,12 +699,20 @@ int main() {
 
     Matrix images_mat = Matrix(images);
     Matrix labels_mat = one_hot_encoding(labels, 10);
-    
-    Network net(images_mat.nCols, 32, labels_mat.nCols);
 
-    const int n_epochs = 100;
-    const int batch_size = 64;
-    const double lr = 3e-3;
-    train(n_epochs, batch_size, images_mat, labels_mat, net, lr);
+    printf("Images_mat: (%d, %d)\n", images_mat.nRows, images_mat.nCols);
+
+    std::vector<Matrix> params = init_params();
+    std::cout << params.size() << "\n";
+    Matrix W1 = params[0];
+    Matrix b1 = params[1];
+    Matrix W2 = params[2];
+    Matrix b2 = params[3];
+
+    std::vector<Matrix> forward_res = forward_prop(W1, b1, W2, b2, images_mat);
+
+
     return 0;
 }
+
+
