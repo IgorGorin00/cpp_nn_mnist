@@ -45,10 +45,42 @@ TEST(MatrixTest, ConstructorWithPreVals) {
 
 TEST(MatrixTest, Print) {
     Matrix matrix(3, 3, 1.0, 2.0);
-    // You can't directly test the output of print(), but you can test that it doesn't crash.
+    // You can't directly test the output of print(), 
+    // but you can test that it doesn't crash.
     matrix.print();
 }
 
+TEST(MatrixTest, OperatorPlus) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+
+    Matrix m2(2, 2);
+    m2[0][0] = 5.0; m2[0][1] = 6.0;
+    m2[1][0] = 7.0; m2[1][1] = 8.0;
+
+    Matrix result = m1 + m2;
+    EXPECT_EQ(result[0][0], 6.0);
+    EXPECT_EQ(result[0][1], 8.0);
+    EXPECT_EQ(result[1][0], 10.0);
+    EXPECT_EQ(result[1][1], 12.0);
+}
+
+TEST(MatrixTest, OperatorPlusEqual) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+
+    Matrix m2(2, 2);
+    m2[0][0] = 5.0; m2[0][1] = 6.0;
+    m2[1][0] = 7.0; m2[1][1] = 8.0;
+
+    m1 += m2;
+    EXPECT_EQ(m1[0][0], 6.0);
+    EXPECT_EQ(m1[0][1], 8.0);
+    EXPECT_EQ(m1[1][0], 10.0);
+    EXPECT_EQ(m1[1][1], 12.0);
+}
 // int main(int argc, char* argv[]) {
 //     Matrix mat(4, 4);
 //     mat.print();

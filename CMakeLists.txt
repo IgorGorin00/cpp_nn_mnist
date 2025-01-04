@@ -16,14 +16,28 @@ add_executable(matrix_init_test
     ../tests/matrix_init.cpp
 )
 
-target_link_libraries(matrix_init_test
-  matrix
-  gtest
-  gtest_main
-  pthread
+add_executable(matrix_operations_test
+    ../tests/matrix_operations.cpp
+)
+
+target_link_libraries(
+    matrix_init_test
+    matrix
+    gtest
+    gtest_main
+    pthread
+)
+
+target_link_libraries(
+    matrix_operations_test
+    matrix
+    gtest
+    gtest_main
+    pthread
 )
 
 enable_testing()
 
 add_test(NAME matrix_init_test COMMAND matrix_init_test)
+add_test(NAME matrix_operations_test COMMAND matrix_operations_test)
 
