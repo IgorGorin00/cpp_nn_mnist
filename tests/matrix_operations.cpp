@@ -152,3 +152,120 @@ TEST(MatrixTest, ZeroDivision) {
 
     EXPECT_THROW(m1 /= m2, std::runtime_error);
 }
+
+
+TEST(MatrixTest, OperatorPlusDouble) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+    const double x = 2.0f;
+    Matrix result = m1 + x;
+
+    EXPECT_EQ(result[0][0], 3.0);
+    EXPECT_EQ(result[0][1], 4.0);
+    EXPECT_EQ(result[1][0], 5.0);
+    EXPECT_EQ(result[1][1], 6.0);
+}
+
+TEST(MatrixTest, OperatorPlusEqualDouble) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+    const double x = 2.0f;
+    m1 += x;
+
+    EXPECT_EQ(m1[0][0], 3.0);
+    EXPECT_EQ(m1[0][1], 4.0);
+    EXPECT_EQ(m1[1][0], 5.0);
+    EXPECT_EQ(m1[1][1], 6.0);
+}
+
+
+TEST(MatrixTest, OperatorMinusDouble) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+    const double x = 2.0f;
+    Matrix result = m1 - x;
+
+    EXPECT_EQ(result[0][0], -1.0);
+    EXPECT_EQ(result[0][1], 0.0);
+    EXPECT_EQ(result[1][0], 1.0);
+    EXPECT_EQ(result[1][1], 2.0);
+}
+
+TEST(MatrixTest, OperatorMinusEqualDouble) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+    const double x = 2.0f;
+    m1 -= x;
+
+    EXPECT_EQ(m1[0][0], -1.0);
+    EXPECT_EQ(m1[0][1], 0.0);
+    EXPECT_EQ(m1[1][0], 1.0);
+    EXPECT_EQ(m1[1][1], 2.0);
+}
+
+TEST(MatrixTest, OperatorMultiplyDouble) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+    const double x = 2.0f;
+    Matrix result = m1 * x;
+
+    EXPECT_EQ(result[0][0], 2.0);
+    EXPECT_EQ(result[0][1], 4.0);
+    EXPECT_EQ(result[1][0], 6.0);
+    EXPECT_EQ(result[1][1], 8.0);
+}
+
+TEST(MatrixTest, OperatorMultiplyEqualDouble) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+    const double x = 2.0f;
+    m1 *= x;
+
+    EXPECT_EQ(m1[0][0], 2.0);
+    EXPECT_EQ(m1[0][1], 4.0);
+    EXPECT_EQ(m1[1][0], 6.0);
+    EXPECT_EQ(m1[1][1], 8.0);
+}
+
+
+TEST(MatrixTest, OperatorDivideDouble) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+    const double x = 2.0f;
+    Matrix result = m1 / x;
+
+    EXPECT_EQ(result[0][0], 0.5);
+    EXPECT_EQ(result[0][1], 1.0);
+    EXPECT_EQ(result[1][0], 1.5);
+    EXPECT_EQ(result[1][1], 2.0);
+}
+
+TEST(MatrixTest, OperatorDivideEqualDouble) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+    const double x = 2.0f;
+    m1 /= x;
+
+    EXPECT_EQ(m1[0][0], 0.5);
+    EXPECT_EQ(m1[0][1], 1.0);
+    EXPECT_EQ(m1[1][0], 1.5);
+    EXPECT_EQ(m1[1][1], 2.0);
+}
+
+TEST(MatrixTest, ZeroDivisionDouble) {
+    Matrix m1(2, 2);
+    m1[0][0] = 1.0; m1[0][1] = 2.0;
+    m1[1][0] = 3.0; m1[1][1] = 4.0;
+    const double x = 0.0f;
+
+    EXPECT_THROW(m1 /= x, std::runtime_error);
+}
+

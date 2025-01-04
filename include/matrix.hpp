@@ -11,6 +11,7 @@ public:
     std::vector<double>& operator[](const int idx); 
     const std::vector<double>& operator[](const int idx) const; 
     void check_shapes_mismatch(const Matrix& other) const;
+
     Matrix operator+(const Matrix& other) const; 
     Matrix operator+=(const Matrix& other); 
     Matrix operator-(const Matrix& other) const; 
@@ -20,4 +21,14 @@ public:
     Matrix operator/(const Matrix& other) const; 
     Matrix operator/=(const Matrix& other); 
     Matrix operator==(const Matrix& other) const; 
+
+    Matrix operator+(const double x) const; 
+    Matrix operator+=(const double x); 
+    Matrix operator-(const double x) const; 
+    Matrix operator-=(const double x); 
+    Matrix operator*(const double x) const; 
+    Matrix operator*=(const double x); 
+    Matrix operator/(const double x) const; 
+    Matrix operator/=(const double x); 
+
 };

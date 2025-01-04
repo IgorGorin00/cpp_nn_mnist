@@ -124,7 +124,7 @@ Matrix Matrix::operator/(const Matrix& other) const {
         for (size_t j = 0; j < this->nCols; j++) {
             if (other[i][j] == 0) {
                 printf("0 encountered at index (%zu, %zu)\n", i, j);
-                throw std::runtime_error("Zero division in Matrix::operator/\n");
+                throw std::runtime_error("Zero division in Matrix::operator/ Matrix&\n");
             } 
             res[i][j] /= other[i][j];
         }
@@ -138,7 +138,7 @@ Matrix Matrix::operator/=(const Matrix& other) {
         for (size_t j = 0; j < this->nCols; j++) {
             if (other[i][j] == 0) {
                 printf("0 encountered at index (%zu, %zu)\n", i, j);
-                throw std::runtime_error("Zero division in Matrix::operator/=\n");
+                throw std::runtime_error("Zero division in Matrix::operator/= Matrix&\n");
             } 
             this->vals[i][j] /= other[i][j];
         }
@@ -158,4 +158,89 @@ Matrix Matrix::operator==(const Matrix& other) const {
     }
     return res;
 };
+
+Matrix Matrix::operator+(const double x) const {
+    Matrix res(*this);
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            res[i][j] += x;
+        }
+    }
+    return res;
+}; 
+
+Matrix Matrix::operator+=(const double x) {
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            this->vals[i][j] += x;
+        }
+    }
+    return *this;
+}; 
+
+Matrix Matrix::operator-(const double x) const {
+    Matrix res(*this);
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            res[i][j] -= x;
+        }
+    }
+    return res;
+};
+
+Matrix Matrix::operator-=(const double x) {
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            this->vals[i][j] -= x;
+        }
+    }
+    return *this;
+};
+
+Matrix Matrix::operator*(const double x) const {
+    Matrix res(*this);
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            res[i][j] *= x;
+        }
+    }
+    return res;
+};
+
+Matrix Matrix::operator*=(const double x) {
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            this->vals[i][j] *= x;
+        }
+    }
+    return *this;
+};
+
+Matrix Matrix::operator/(const double x) const {
+    if (x == 0) {
+        printf("0 encountered in divide!\n");
+        throw std::runtime_error("Zero division in Matrix::operator/ float\n");
+    }
+    Matrix res(*this);
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            res[i][j] /= x;
+        }
+    }
+    return res;
+};
+
+Matrix Matrix::operator/=(const double x) {
+    if (x == 0) {
+        printf("0 encountered in divide!\n");
+        throw std::runtime_error("Zero division in Matrix::operator/= float\n");
+    }
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            this->vals[i][j] /= x;
+        }
+    }
+    return *this;
+};
+
 
