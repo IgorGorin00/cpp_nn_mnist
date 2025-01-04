@@ -1,4 +1,5 @@
 #include "../include/matrix.hpp"
+#include <algorithm>
 #include <cstdio>
 #include <random>
 #include <stdexcept>
@@ -241,6 +242,134 @@ Matrix Matrix::operator/=(const double x) {
         }
     }
     return *this;
+};
+
+Matrix Matrix::row_wise_add(const std::vector<double>& vec) const {
+    if (vec.size() != this->nCols) {
+        printf("this->shape (%d, %d), vec.size() %zu\n", 
+                this->nRows, this->nCols, vec.size());
+        throw std::runtime_error("Shape mismatch! In Matrix::row_wise_add\n");
+    }
+    Matrix res(*this);
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            res[i][j] = this->vals[i][j] + vec[j];
+        }
+    }
+    return res;
+};
+
+Matrix Matrix::row_wise_substract(const std::vector<double>& vec) const {
+    if (vec.size() != this->nCols) {
+        printf("this->shape (%d, %d), vec.size() %zu\n", 
+                this->nRows, this->nCols, vec.size());
+        throw std::runtime_error("Shape mismatch! In Matrix::row_wise_substract\n");
+    }
+    Matrix res(*this);
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            res[i][j] = this->vals[i][j] - vec[j];
+        }
+    }
+    return res;
+};
+
+Matrix Matrix::row_wise_multiply(const std::vector<double>& vec) const {
+    if (vec.size() != this->nCols) {
+        printf("this->shape (%d, %d), vec.size() %zu\n", 
+                this->nRows, this->nCols, vec.size());
+        throw std::runtime_error("Shape mismatch! In Matrix::row_wise_multiply\n");
+    }
+    Matrix res(*this);
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            res[i][j] = this->vals[i][j] * vec[j];
+        }
+    }
+    return res;
+};
+
+Matrix Matrix::row_wise_divide(const std::vector<double>& vec) const {
+    if (vec.size() != this->nCols) {
+        printf("this->shape (%d, %d), vec.size() %zu\n", 
+                this->nRows, this->nCols, vec.size());
+        throw std::runtime_error("Shape mismatch! In Matrix::row_wise_divide\n");
+    }
+    Matrix res(*this);
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < this->nCols; j++) {
+            if (vec[j] == 0) {
+                printf("0 encountered in vec at index %zu\n", j);
+                throw std::runtime_error("Zero division in Matrix::row_wise_divide\n");
+            } 
+            res[i][j] = this->vals[i][j] / vec[j];
+        }
+    }
+    return res;
+};
+
+Matrix Matrix::col_wise_add(const std::vector<double>& vec) const {
+    if (vec.size() != this->nRows) {
+        printf("this->shape (%d, %d), vec.size() %zu\n", 
+                this->nRows, this->nCols, vec.size());
+        throw std::runtime_error("Shape mismatch! In Matrix::col_wise_add\n");
+    }
+    Matrix res(*this);
+    for (size_t j = 0; j < this->nCols; j++) {
+        for (size_t i = 0; i < this->nRows; i++) {
+            res[i][j] = this->vals[i][j] + vec[i];
+        }
+    }
+    return res;
+};
+
+Matrix Matrix::col_wise_substract(const std::vector<double>& vec) const {
+    if (vec.size() != this->nRows) {
+        printf("this->shape (%d, %d), vec.size() %zu\n", 
+                this->nRows, this->nCols, vec.size());
+        throw std::runtime_error("Shape mismatch! In Matrix::col_wise_substract\n");
+    }
+    Matrix res(*this);
+    for (size_t j = 0; j < this->nCols; j++) {
+        for (size_t i = 0; i < this->nRows; i++) {
+            res[i][j] = this->vals[i][j] - vec[i];
+        }
+    }
+    return res;
+};
+
+Matrix Matrix::col_wise_multiply(const std::vector<double>& vec) const {
+    if (vec.size() != this->nRows) {
+        printf("this->shape (%d, %d), vec.size() %zu\n", 
+                this->nRows, this->nCols, vec.size());
+        throw std::runtime_error("Shape mismatch! In Matrix::col_wise_multiply\n");
+    }
+    Matrix res(*this);
+    for (size_t j = 0; j < this->nCols; j++) {
+        for (size_t i = 0; i < this->nRows; i++) {
+            res[i][j] = this->vals[i][j] * vec[i];
+        }
+    }
+    return res;
+};
+
+Matrix Matrix::col_wise_divide(const std::vector<double>& vec) const {
+    if (vec.size() != this->nRows) {
+        printf("this->shape (%d, %d), vec.size() %zu\n", 
+                this->nRows, this->nCols, vec.size());
+        throw std::runtime_error("Shape mismatch! In Matrix::col_wise_divide\n");
+    }
+    Matrix res(*this);
+    for (size_t j = 0; j < this->nCols; j++) {
+        for (size_t i = 0; i < this->nRows; i++) {
+            if (vec[j] == 0) {
+                printf("0 encountered in vec at index %zu\n", i);
+                throw std::runtime_error("Zero division in Matrix::col_wise_divide\n");
+            } 
+            res[i][j] = this->vals[i][j] / vec[i];
+        }
+    }
+    return res;
 };
 
 

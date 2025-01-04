@@ -31,4 +31,12 @@ public:
     Matrix operator/(const double x) const; 
     Matrix operator/=(const double x); 
 
+    Matrix row_wise_add(const std::vector<double>& vec) const;
+    Matrix row_wise_substract(const std::vector<double>& vec) const;
+    Matrix row_wise_multiply(const std::vector<double>& vec) const;
+    Matrix row_wise_divide(const std::vector<double>& vec) const;
+    Matrix col_wise_add(const std::vector<double>& vec) const;
+    Matrix col_wise_substract(const std::vector<double>& vec) const;
+    Matrix col_wise_multiply(const std::vector<double>& vec) const;
+    Matrix col_wise_divide(const std::vector<double>& vec) const;
 };
