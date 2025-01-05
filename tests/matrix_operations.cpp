@@ -430,3 +430,51 @@ TEST(MatrixTest, ColWiseDivideZeroFail) {
 
     EXPECT_THROW(m1.col_wise_divide(vec), std::runtime_error);
 }
+
+TEST(MatrixTest, Dot) {
+    Matrix m1(2, 3);
+    m1[0][0] = 2.0; m1[0][1] = 3.0; m1[0][2] = 4.0;
+    m1[1][0] = 1.0; m1[1][1] = 0.0; m1[1][2] = 0.0;
+
+    Matrix m2(3, 2);
+    m2[0][0] = 0.0; m2[0][1] = 1000.0;
+    m2[1][0] = 1.0; m2[1][1] = 100.0;
+    m2[2][0] = 0.0; m2[2][1] = 10.0;
+
+    Matrix result = m1.dot(m2);
+    EXPECT_EQ(result[0][0], 3.0); EXPECT_EQ(result[0][1], 2340.0);
+    EXPECT_EQ(result[1][0], 0.0); EXPECT_EQ(result[1][1], 1000.0);
+}
+
+TEST(MatrixTest, DotLarge) {
+    Matrix m1(30, 10);
+    for (int i = 0; i < 30; i++) {
+        for (int j = 0; j < 10; j++) {
+            m1[i][j] = i + j;
+        }
+    }
+
+    Matrix m2(10, 10);
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            m2[i][j] = i * j;
+        }
+    }
+
+    Matrix result = m1.dot(m2);
+    for (int i = 0; i < 30; i++) {
+        for (int j = 0; j < 10; j++) {
+            double expected = 0;
+            for (int k = 0; k < 10; k++) {
+                expected += (i + k) * (k * j);
+            }
+            EXPECT_NEAR(result[i][j], expected, 1e-6);
+        }
+    }
+}
+
+TEST(MatrixTest, DotShapeMismatch) {
+    Matrix m1(5, 3);
+    Matrix m2(5, 2);
+    EXPECT_THROW(m1.dot(m2), std::runtime_error);
+}

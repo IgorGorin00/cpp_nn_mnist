@@ -39,4 +39,7 @@ public:
     Matrix col_wise_substract(const std::vector<double>& vec) const;
     Matrix col_wise_multiply(const std::vector<double>& vec) const;
     Matrix col_wise_divide(const std::vector<double>& vec) const;
+
+    Matrix dot(const Matrix& other) const;
+    Matrix matMul(const Matrix& other) const;
 };

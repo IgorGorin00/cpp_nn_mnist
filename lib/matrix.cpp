@@ -372,4 +372,24 @@ Matrix Matrix::col_wise_divide(const std::vector<double>& vec) const {
     return res;
 };
 
+Matrix Matrix::dot(const Matrix& other) const {
+    if (this->nCols != other.nRows) {
+        printf("this->shape (%d, %d), other.shape(%d, %d)\n",
+                this->nRows, this->nCols, other.nRows, other.nCols);
+        throw std::runtime_error("Shape mismatch in Matrix::dot. this->nCols should equal other.nRows!\n");
+    }
+    Matrix res(this->nRows, other.nCols);
+    for (size_t i = 0; i < this->nRows; i++) {
+        for (size_t j = 0; j < other.nCols; j++) {
+            for (size_t k = 0; k < this->nCols; k++) {
+                res[i][j] += this->vals[i][k] * other.vals[k][j];
+            }
+        }
+    }
+    return res;
+};
 
+Matrix Matrix::matMul(const Matrix& other) const {
+    return this->dot(other);
+
+};
